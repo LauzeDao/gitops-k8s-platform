@@ -1,0 +1,26 @@
+replicaCount: 0
+
+provider:
+  name: azure
+
+serviceAccount:
+  create: true
+  labels:
+    azure.workload.identity/use: "true"
+
+podLabels:
+  azure.workload.identity/use: "true"
+  app.kubernetes.io/part-of: gitops-k8s-platform
+
+policy: sync
+registry: txt
+txtOwnerId: gitops-k8s-platform
+
+sources:
+  - service
+  - ingress
+
+domainFilters: []
+
+commonLabels:
+  app.kubernetes.io/part-of: gitops-k8s-platform

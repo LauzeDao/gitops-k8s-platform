@@ -1,0 +1,13 @@
+apiVersion: kustomize.config.k8s.io/v1beta1
+kind: Kustomization
+resources:
+  - namespaces.yaml
+  - sources
+  - ingress-nginx
+  - cert-manager
+  - kyverno
+  - kube-prometheus-stack
+  - grafana-alloy
+  - dex
+  - flagger
+  - flux-image-automation

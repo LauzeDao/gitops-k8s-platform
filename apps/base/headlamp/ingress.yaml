@@ -1,0 +1,29 @@
+apiVersion: networking.k8s.io/v1
+kind: Ingress
+metadata:
+  name: headlamp-ingress
+  namespace: tools
+  labels:
+    app.kubernetes.io/part-of: gitops-k8s-platform
+    app.kubernetes.io/name: headlamp
+  annotations:
+    cert-manager.io/cluster-issuer: placeholder-issuer
+    nginx.ingress.kubernetes.io/proxy-buffer-size: "32k"
+    nginx.ingress.kubernetes.io/proxy-buffers-number: "4"
+spec:
+  ingressClassName: nginx
+  rules:
+    - host: headlamp.placeholder.local
+      http:
+        paths:
+          - path: /headlamp
+            pathType: Prefix
+            backend:
+              service:
+                name: headlamp
+                port:
+                  number: 80
+  tls:
+    - hosts:
+        - headlamp.placeholder.local
+      secretName: headlamp-ingress-secret

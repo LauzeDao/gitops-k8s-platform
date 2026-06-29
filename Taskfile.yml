@@ -1,0 +1,73 @@
+version: "3"
+
+vars:
+  CLUSTER_NAME: gitops-local
+  KIND_CONFIG: bootstrap/local/kind-config.yaml
+  AGE_KEY_FILE: bootstrap/local/age.key
+  FLUX_NAMESPACE: flux-system
+  FLUX_VERSION: 2.8.8
+  BASE_DOMAIN: local.gitops.lab
+
+env:
+  KUBECONTEXT: kind-{{.CLUSTER_NAME}}
+
+tasks:
+  default:
+    desc: List available tasks
+    cmds:
+      - task --list
+    silent: true
+
+  bootstrap:local:
+    desc: "Run the idempotent local bootstrap script (kind + Flux + age + entrypoint)"
+    cmds:
+      - bash bootstrap/local/bootstrap.sh
+    env:
+      CLUSTER_NAME: "{{.CLUSTER_NAME}}"
+      KIND_CONFIG: "{{.KIND_CONFIG}}"
+      AGE_KEY_FILE: "{{.AGE_KEY_FILE}}"
+      FLUX_VERSION: "{{.FLUX_VERSION}}"
+
+  up:local:
+    desc: "Bring up the full local stack: kind cluster, Flux, sops-age secret, clusters/local entrypoint"
+    cmds:
+      - task: bootstrap:local
+      - cmd: echo "Stack bootstrapped. Run 'task reconcile' to force a sync, 'task hosts:print' for /etc/hosts."
+        silent: true
+
+  down:local:
+    desc: "Delete the local kind cluster completely"
+    cmds:
+      - kind delete cluster --name {{.CLUSTER_NAME}}
+
+  reconcile:
+    desc: "Force Flux to pull the latest git state and reconcile the root Kustomization"
+    cmds:
+      - flux reconcile source git {{.FLUX_NAMESPACE}} -n {{.FLUX_NAMESPACE}} --context {{.KUBECONTEXT}}
+      - flux reconcile kustomization {{.FLUX_NAMESPACE}} -n {{.FLUX_NAMESPACE}} --context {{.KUBECONTEXT}} --with-source
+
+  validate:
+    desc: "Offline validation: kustomize build clusters/{local,azure} | kubeconform -strict"
+    cmds:
+      - kustomize build clusters/local | kubeconform -strict -ignore-missing-schemas -summary
+      - kustomize build clusters/azure | kubeconform -strict -ignore-missing-schemas -summary
+
+  decrypt-check:
+    desc: "Verify the local age key and the in-cluster sops-age secret are present"
+    cmds:
+      - test -f {{.AGE_KEY_FILE}} || (echo "missing {{.AGE_KEY_FILE}} (run: age-keygen -o {{.AGE_KEY_FILE}})" && exit 1)
+      - sops --version
+      - age --version
+      - kubectl --context {{.KUBECONTEXT}} -n {{.FLUX_NAMESPACE}} get secret sops-age
+
+  hosts:print:
+    desc: "Print the /etc/hosts lines for the local apps (does NOT edit /etc/hosts)"
+    silent: true
+    cmds:
+      - |
+        echo "# gitops-k8s-platform — add these lines to /etc/hosts (Windows: C:\\Windows\\System32\\drivers\\etc\\hosts):"
+        echo "127.0.0.1 grafana.{{.BASE_DOMAIN}}"
+        echo "127.0.0.1 pgadmin.{{.BASE_DOMAIN}}"
+        echo "127.0.0.1 headlamp.{{.BASE_DOMAIN}}"
+        echo "127.0.0.1 podinfo.{{.BASE_DOMAIN}}"
+        echo "127.0.0.1 dex.{{.BASE_DOMAIN}}"

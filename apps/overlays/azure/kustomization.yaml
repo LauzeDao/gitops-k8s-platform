@@ -1,0 +1,120 @@
+apiVersion: kustomize.config.k8s.io/v1beta1
+kind: Kustomization
+
+resources:
+  - ../../base
+
+patches:
+  - target:
+      kind: Ingress
+      name: grafana-ingress
+    patch: |
+      - op: replace
+        path: /spec/rules/0/host
+        value: grafana.${BASE_DOMAIN}
+      - op: replace
+        path: /spec/tls/0/hosts/0
+        value: grafana.${BASE_DOMAIN}
+      - op: replace
+        path: /metadata/annotations/cert-manager.io~1cluster-issuer
+        value: letsencrypt-prod
+      - op: add
+        path: /metadata/annotations/external-dns.alpha.kubernetes.io~1hostname
+        value: grafana.${BASE_DOMAIN}
+  - target:
+      kind: Ingress
+      name: pgadmin-ingress
+    patch: |
+      - op: replace
+        path: /spec/rules/0/host
+        value: pgadmin.${BASE_DOMAIN}
+      - op: replace
+        path: /spec/tls/0/hosts/0
+        value: pgadmin.${BASE_DOMAIN}
+      - op: replace
+        path: /metadata/annotations/cert-manager.io~1cluster-issuer
+        value: letsencrypt-prod
+      - op: add
+        path: /metadata/annotations/external-dns.alpha.kubernetes.io~1hostname
+        value: pgadmin.${BASE_DOMAIN}
+  - target:
+      kind: Ingress
+      name: headlamp-ingress
+    patch: |
+      - op: replace
+        path: /spec/rules/0/host
+        value: headlamp.${BASE_DOMAIN}
+      - op: replace
+        path: /spec/tls/0/hosts/0
+        value: headlamp.${BASE_DOMAIN}
+      - op: replace
+        path: /metadata/annotations/cert-manager.io~1cluster-issuer
+        value: letsencrypt-prod
+      - op: add
+        path: /metadata/annotations/external-dns.alpha.kubernetes.io~1hostname
+        value: headlamp.${BASE_DOMAIN}
+  - target:
+      kind: Ingress
+      name: podinfo
+    patch: |
+      - op: replace
+        path: /spec/rules/0/host
+        value: podinfo.${BASE_DOMAIN}
+      - op: replace
+        path: /spec/tls/0/hosts/0
+        value: podinfo.${BASE_DOMAIN}
+      - op: replace
+        path: /metadata/annotations/cert-manager.io~1cluster-issuer
+        value: letsencrypt-prod
+      - op: add
+        path: /metadata/annotations/external-dns.alpha.kubernetes.io~1hostname
+        value: podinfo.${BASE_DOMAIN}
+
+  - target:
+      kind: HelmRelease
+      name: pgadmin
+    patch: |
+      apiVersion: helm.toolkit.fluxcd.io/v2
+      kind: HelmRelease
+      metadata:
+        name: pgadmin
+        namespace: tools
+      spec:
+        values:
+          envVarsExtra:
+            - name: OAUTH2_CLIENT_ID
+              value: "${PGADMIN_OAUTH_CLIENT_ID}"
+            - name: OAUTH2_CLIENT_SECRET
+              valueFrom:
+                secretKeyRef:
+                  name: pgadmin-secret
+                  key: oauth-client-secret
+            - name: OAUTH2_AUTHORIZATION_URL
+              value: "https://login.microsoftonline.com/${ENTRA_TENANT_ID}/oauth2/v2.0/authorize"
+            - name: OAUTH2_TOKEN_URL
+              value: "https://login.microsoftonline.com/${ENTRA_TENANT_ID}/oauth2/v2.0/token"
+            - name: OAUTH2_API_BASE_URL
+              value: "https://graph.microsoft.com/oidc/"
+            - name: OAUTH2_SERVER_METADATA_URL
+              value: "https://login.microsoftonline.com/${ENTRA_TENANT_ID}/v2.0/.well-known/openid-configuration"
+            - name: OAUTH2_USERINFO_ENDPOINT
+              value: "userinfo"
+
+  - target:
+      kind: HelmRelease
+      name: headlamp
+    patch: |
+      apiVersion: helm.toolkit.fluxcd.io/v2
+      kind: HelmRelease
+      metadata:
+        name: headlamp
+        namespace: tools
+      spec:
+        values:
+          config:
+            oidc:
+              externalSecret:
+                enabled: true
+                name: headlamp-secret
+              issuerURL: https://login.microsoftonline.com/${ENTRA_TENANT_ID}/v2.0
+              scopes: "openid email profile"

@@ -1,0 +1,33 @@
+---
+apiVersion: image.toolkit.fluxcd.io/v1
+kind: ImageUpdateAutomation
+metadata:
+  name: podinfo
+  namespace: tools
+  labels:
+    app.kubernetes.io/part-of: gitops-k8s-platform
+    app.kubernetes.io/name: podinfo
+spec:
+  interval: 30m
+  sourceRef:
+    kind: GitRepository
+    name: flux-system
+    namespace: flux-system
+  git:
+    checkout:
+      ref:
+        branch: main
+    commit:
+      author:
+        name: flux-image-bot
+        email: flux-image-bot@users.noreply.github.com
+      messageTemplate: |
+        chore(podinfo): automated image update
+        {{ range .Updated.Images -}}
+        - {{ . }}
+        {{ end -}}
+    push:
+      branch: main
+  update:
+    path: ./apps/base/podinfo
+    strategy: Setters

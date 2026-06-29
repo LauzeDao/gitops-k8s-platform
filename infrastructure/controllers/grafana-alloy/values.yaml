@@ -1,0 +1,29 @@
+fullnameOverride: grafana-alloy
+
+alloy:
+  configMap:
+    create: false
+    name: alloy-config
+    key: config.alloy
+  mounts:
+    varlog: true
+  resources:
+    requests:
+      cpu: 50m
+      memory: 96Mi
+    limits:
+      cpu: 200m
+      memory: 192Mi
+
+controller:
+  type: daemonset
+  tolerations:
+    - key: node-role.kubernetes.io/control-plane
+      operator: Exists
+      effect: NoSchedule
+    - key: node-role.kubernetes.io/master
+      operator: Exists
+      effect: NoSchedule
+
+serviceMonitor:
+  enabled: true

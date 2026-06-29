@@ -1,0 +1,86 @@
+name: azure-bootstrap
+
+on:
+  workflow_dispatch:
+    inputs:
+      action:
+        description: "OpenTofu action to run"
+        type: choice
+        options: [plan, apply, destroy]
+        default: plan
+
+permissions:
+  id-token: write
+  contents: read
+
+concurrency:
+  group: azure-bootstrap
+  cancel-in-progress: false
+
+env:
+  TF_IN_AUTOMATION: "true"
+  WORKDIR: bootstrap/azure
+  ARM_USE_OIDC: "true"
+  ARM_USE_AZUREAD: "true"
+  ARM_CLIENT_ID: ${{ vars.AZURE_CLIENT_ID }}
+  ARM_TENANT_ID: ${{ vars.AZURE_TENANT_ID }}
+  ARM_SUBSCRIPTION_ID: ${{ vars.AZURE_SUBSCRIPTION_ID }}
+
+jobs:
+  tofu:
+    runs-on: ubuntu-24.04
+    environment: ${{ inputs.action == 'plan' && 'azure-bootstrap-plan' || 'azure-bootstrap' }}
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Azure login (OIDC, no secret)
+        uses: azure/login@v2
+        with:
+          client-id: ${{ vars.AZURE_CLIENT_ID }}
+          tenant-id: ${{ vars.AZURE_TENANT_ID }}
+          subscription-id: ${{ vars.AZURE_SUBSCRIPTION_ID }}
+
+      - name: Install kubelogin (for kubernetes/helm providers)
+        uses: azure/use-kubelogin@v1
+        with:
+          kubelogin-version: v0.1.4
+
+      - name: Setup OpenTofu
+        uses: opentofu/setup-opentofu@v1
+        with:
+          tofu_version: 1.9.0
+          tofu_wrapper: false
+
+      - name: Render tfvars (kept out of the repo; stored as a secret)
+        run: |
+          install -d "${WORKDIR}/tfvars"
+          printf '%s' "${{ secrets.AZURE_TFVARS }}" > "${WORKDIR}/tfvars/ci.tfvars"
+        shell: bash
+
+      - name: Tofu init
+        working-directory: ${{ env.WORKDIR }}
+        run: tofu init -input=false
+
+      - name: Tofu validate
+        working-directory: ${{ env.WORKDIR }}
+        run: tofu validate
+
+      - name: Tofu plan
+        working-directory: ${{ env.WORKDIR }}
+        env:
+          TF_VAR_age_private_key: ${{ secrets.AGE_PRIVATE_KEY }}
+        run: |
+          DESTROY_FLAG=""
+          if [ "${{ inputs.action }}" = "destroy" ]; then DESTROY_FLAG="-destroy"; fi
+          tofu plan -input=false ${DESTROY_FLAG} \
+            -var-file=tfvars/ci.tfvars \
+            -out=tofu.plan
+        shell: bash
+
+      - name: Tofu apply
+        if: ${{ inputs.action == 'apply' || inputs.action == 'destroy' }}
+        working-directory: ${{ env.WORKDIR }}
+        env:
+          TF_VAR_age_private_key: ${{ secrets.AGE_PRIVATE_KEY }}
+        run: tofu apply -input=false -auto-approve tofu.plan

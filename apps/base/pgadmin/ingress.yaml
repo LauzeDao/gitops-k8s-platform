@@ -1,0 +1,28 @@
+apiVersion: networking.k8s.io/v1
+kind: Ingress
+metadata:
+  name: pgadmin-ingress
+  namespace: tools
+  labels:
+    app.kubernetes.io/part-of: gitops-k8s-platform
+    app.kubernetes.io/name: pgadmin
+  annotations:
+    cert-manager.io/cluster-issuer: placeholder-issuer
+    nginx.ingress.kubernetes.io/proxy-body-size: 50m
+spec:
+  ingressClassName: nginx
+  rules:
+    - host: pgadmin.placeholder.local
+      http:
+        paths:
+          - path: /
+            pathType: Prefix
+            backend:
+              service:
+                name: pgadmin
+                port:
+                  number: 80
+  tls:
+    - hosts:
+        - pgadmin.placeholder.local
+      secretName: pgadmin-ingress-secret

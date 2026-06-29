@@ -1,0 +1,58 @@
+replicaCount: 1
+
+fullnameOverride: pgadmin
+
+env:
+  email: admin@gitops.lab
+
+existingSecret: pgadmin-secret
+secretKeys:
+  pgadminPasswordKey: password
+
+envVarsExtra:
+  - name: OAUTH2_CLIENT_ID
+    value: "pgadmin"
+  - name: OAUTH2_CLIENT_SECRET
+    valueFrom:
+      secretKeyRef:
+        name: pgadmin-secret
+        key: oauth-client-secret
+  - name: OAUTH2_AUTHORIZATION_URL
+    value: "https://dex.placeholder.local/auth"
+  - name: OAUTH2_TOKEN_URL
+    value: "https://dex.placeholder.local/token"
+  - name: OAUTH2_API_BASE_URL
+    value: "https://dex.placeholder.local/"
+  - name: OAUTH2_SERVER_METADATA_URL
+    value: "https://dex.placeholder.local/.well-known/openid-configuration"
+  - name: OAUTH2_USERINFO_ENDPOINT
+    value: "userinfo"
+
+extraConfigmapMounts:
+  - name: pgadmin-config
+    configMap: pgadmin-config
+    mountPath: /pgadmin4/config_local.py
+    subPath: config_local.py
+    readOnly: true
+    defaultMode: 420
+
+strategy:
+  type: Recreate
+
+persistentVolume:
+  enabled: true
+  size: 5Gi
+  accessMode: ReadWriteOnce
+
+service:
+  type: ClusterIP
+ingress:
+  enabled: false
+
+resources:
+  requests:
+    cpu: 100m
+    memory: 128Mi
+  limits:
+    cpu: 500m
+    memory: 512Mi

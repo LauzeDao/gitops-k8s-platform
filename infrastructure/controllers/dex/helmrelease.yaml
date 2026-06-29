@@ -1,0 +1,33 @@
+apiVersion: helm.toolkit.fluxcd.io/v2
+kind: HelmRelease
+metadata:
+  name: dex
+  namespace: flux-system
+  labels:
+    app.kubernetes.io/part-of: gitops-k8s-platform
+spec:
+  interval: 30m
+  releaseName: dex
+  targetNamespace: dex
+  storageNamespace: dex
+  chart:
+    spec:
+      chart: dex
+      # renovate: helm chart "dex" from repo https://charts.dexidp.io
+      version: "0.24.1"
+      sourceRef:
+        kind: HelmRepository
+        name: dex
+        namespace: flux-system
+      interval: 12h
+  install:
+    createNamespace: true
+    remediation:
+      retries: 3
+  upgrade:
+    remediation:
+      retries: 3
+  valuesFrom:
+    - kind: ConfigMap
+      name: dex-values
+      valuesKey: values.yaml

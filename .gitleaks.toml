@@ -1,0 +1,12 @@
+# gitleaks config for gitops-k8s-platform.
+# Extends the default ruleset and allowlists the intentionally-published local
+# DEMO age key (it only decrypts fake demo secrets — see the key's banner/README).
+[extend]
+useDefault = true
+
+[allowlist]
+description = "Intentional throwaway DEMO age key for local clone-and-run; not a real secret."
+paths = [
+  '''bootstrap/local/age\.key$''',
+  '''bootstrap/local/age\.key\.example$''',
+]

@@ -1,0 +1,41 @@
+{
+  "$schema": "https://docs.renovatebot.com/renovate-schema.json",
+  "extends": [
+    "config:recommended",
+    ":dependencyDashboard",
+    ":semanticCommits"
+  ],
+  "enabledManagers": [
+    "helm-values",
+    "flux",
+    "github-actions",
+    "terraform"
+  ],
+  "pinDigests": true,
+  "flux": {
+    "managerFilePatterns": [
+      "/(^|/)infrastructure/.+\\.ya?ml$/",
+      "/(^|/)apps/.+\\.ya?ml$/",
+      "/(^|/)clusters/.+\\.ya?ml$/"
+    ]
+  },
+  "helm-values": {
+    "managerFilePatterns": [
+      "/(^|/)values\\.ya?ml$/",
+      "/(^|/).+values\\.ya?ml$/"
+    ]
+  },
+  "packageRules": [
+    {
+      "description": "Group all non-major (minor + patch) updates into a single PR.",
+      "matchUpdateTypes": ["minor", "patch", "digest", "pin"],
+      "groupName": "all minor and patch updates"
+    },
+    {
+      "description": "Never auto-merge major updates; require manual approval via dashboard.",
+      "matchUpdateTypes": ["major"],
+      "automerge": false,
+      "dependencyDashboardApproval": true
+    }
+  ]
+}

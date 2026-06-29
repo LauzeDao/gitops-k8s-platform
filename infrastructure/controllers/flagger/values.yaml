@@ -1,0 +1,18 @@
+meshProvider: nginx
+
+metricsServer: http://prometheus-operated.monitoring:9090
+
+prometheus:
+  install: false
+
+logLevel: info
+
+podLabels:
+  app.kubernetes.io/part-of: gitops-k8s-platform
+
+resources:
+  requests:
+    cpu: 10m
+    memory: 32Mi
+  limits:
+    memory: 128Mi

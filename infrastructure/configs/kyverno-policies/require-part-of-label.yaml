@@ -1,0 +1,30 @@
+apiVersion: kyverno.io/v1
+kind: ClusterPolicy
+metadata:
+  name: require-part-of-label
+  labels:
+    app.kubernetes.io/part-of: gitops-k8s-platform
+  annotations:
+    policies.kyverno.io/title: Require app.kubernetes.io/part-of Label
+    policies.kyverno.io/category: Best Practices
+    policies.kyverno.io/severity: medium
+    policies.kyverno.io/subject: Pod
+    policies.kyverno.io/description: >-
+      Every Pod must carry the label app.kubernetes.io/part-of so workloads stay
+      traceable to the platform.
+spec:
+  background: true
+  rules:
+    - name: check-part-of-label
+      match:
+        any:
+          - resources:
+              kinds:
+                - Pod
+      validate:
+        failureAction: Audit
+        message: "The label 'app.kubernetes.io/part-of' is required."
+        pattern:
+          metadata:
+            labels:
+              app.kubernetes.io/part-of: "?*"

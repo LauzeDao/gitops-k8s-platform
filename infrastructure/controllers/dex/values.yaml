@@ -1,0 +1,65 @@
+fullnameOverride: dex
+
+envVars:
+  - name: GRAFANA_CLIENT_SECRET
+    valueFrom:
+      secretKeyRef:
+        name: dex-secret
+        key: grafana-client-secret
+  - name: PGADMIN_CLIENT_SECRET
+    valueFrom:
+      secretKeyRef:
+        name: dex-secret
+        key: pgadmin-client-secret
+
+config:
+  issuer: https://dex.local.gitops.lab
+
+  storage:
+    type: kubernetes
+    config:
+      inCluster: true
+
+  web:
+    http: 0.0.0.0:5556
+
+  oauth2:
+    skipApprovalScreen: true
+    responseTypes:
+      - code
+
+  enablePasswordDB: true
+
+  staticClients:
+    - id: grafana
+      name: Grafana
+      secretEnv: GRAFANA_CLIENT_SECRET
+      redirectURIs:
+        - https://grafana.local.gitops.lab/login/generic_oauth
+    - id: pgadmin
+      name: pgAdmin
+      secretEnv: PGADMIN_CLIENT_SECRET
+      redirectURIs:
+        - https://pgadmin.local.gitops.lab/oauth2/authorize
+
+  staticPasswords:
+    - email: "admin@gitops.lab"
+      username: "admin"
+      userID: "00000000-0000-0000-0000-000000000001"
+      hash: "$2a$10$2b2cU8CPhOTaGrs1HRQuAueS7JTT5ZHsHSzYiFPm1leZck7Mc8T4i"
+
+https:
+  enabled: false
+
+service:
+  ports:
+    http:
+      port: 5556
+
+resources:
+  requests:
+    cpu: 25m
+    memory: 64Mi
+  limits:
+    cpu: 150m
+    memory: 128Mi

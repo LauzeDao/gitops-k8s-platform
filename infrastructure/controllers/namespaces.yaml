@@ -1,0 +1,20 @@
+apiVersion: v1
+kind: Namespace
+metadata:
+  name: tools
+  labels:
+    app.kubernetes.io/part-of: gitops-k8s-platform
+---
+apiVersion: v1
+kind: Namespace
+metadata:
+  name: monitoring
+  labels:
+    app.kubernetes.io/part-of: gitops-k8s-platform
+---
+apiVersion: v1
+kind: Namespace
+metadata:
+  name: dex
+  labels:
+    app.kubernetes.io/part-of: gitops-k8s-platform

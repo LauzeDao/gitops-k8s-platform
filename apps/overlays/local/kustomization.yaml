@@ -1,0 +1,108 @@
+apiVersion: kustomize.config.k8s.io/v1beta1
+kind: Kustomization
+
+resources:
+  - ../../base
+
+patches:
+  - target:
+      kind: Ingress
+      name: grafana-ingress
+    patch: |
+      - op: replace
+        path: /spec/rules/0/host
+        value: grafana.local.gitops.lab
+      - op: replace
+        path: /spec/tls/0/hosts/0
+        value: grafana.local.gitops.lab
+      - op: replace
+        path: /metadata/annotations/cert-manager.io~1cluster-issuer
+        value: selfsigned-issuer
+  - target:
+      kind: Ingress
+      name: pgadmin-ingress
+    patch: |
+      - op: replace
+        path: /spec/rules/0/host
+        value: pgadmin.local.gitops.lab
+      - op: replace
+        path: /spec/tls/0/hosts/0
+        value: pgadmin.local.gitops.lab
+      - op: replace
+        path: /metadata/annotations/cert-manager.io~1cluster-issuer
+        value: selfsigned-issuer
+  - target:
+      kind: Ingress
+      name: headlamp-ingress
+    patch: |
+      - op: replace
+        path: /spec/rules/0/host
+        value: headlamp.local.gitops.lab
+      - op: replace
+        path: /spec/tls/0/hosts/0
+        value: headlamp.local.gitops.lab
+      - op: replace
+        path: /metadata/annotations/cert-manager.io~1cluster-issuer
+        value: selfsigned-issuer
+  - target:
+      kind: Ingress
+      name: podinfo
+    patch: |
+      - op: replace
+        path: /spec/rules/0/host
+        value: podinfo.local.gitops.lab
+      - op: replace
+        path: /spec/tls/0/hosts/0
+        value: podinfo.local.gitops.lab
+      - op: replace
+        path: /metadata/annotations/cert-manager.io~1cluster-issuer
+        value: selfsigned-issuer
+
+  - target:
+      kind: HelmRelease
+      name: pgadmin
+    patch: |
+      apiVersion: helm.toolkit.fluxcd.io/v2
+      kind: HelmRelease
+      metadata:
+        name: pgadmin
+        namespace: tools
+      spec:
+        values:
+          envVarsExtra:
+            - name: OAUTH2_CLIENT_ID
+              value: "pgadmin"
+            - name: OAUTH2_CLIENT_SECRET
+              valueFrom:
+                secretKeyRef:
+                  name: pgadmin-secret
+                  key: oauth-client-secret
+            - name: OAUTH2_AUTHORIZATION_URL
+              value: "https://dex.local.gitops.lab/auth"
+            - name: OAUTH2_TOKEN_URL
+              value: "https://dex.local.gitops.lab/token"
+            - name: OAUTH2_API_BASE_URL
+              value: "https://dex.local.gitops.lab/"
+            - name: OAUTH2_SERVER_METADATA_URL
+              value: "https://dex.local.gitops.lab/.well-known/openid-configuration"
+            - name: OAUTH2_USERINFO_ENDPOINT
+              value: "userinfo"
+
+  - target:
+      kind: HelmRelease
+      name: headlamp
+    patch: |
+      apiVersion: helm.toolkit.fluxcd.io/v2
+      kind: HelmRelease
+      metadata:
+        name: headlamp
+        namespace: tools
+      spec:
+        values:
+          config:
+            oidc:
+              externalSecret:
+                enabled: true
+                name: headlamp-secret
+              issuerURL: https://dex.local.gitops.lab
+              scopes: "openid email profile"

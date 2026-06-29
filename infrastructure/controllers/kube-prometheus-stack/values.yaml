@@ -1,0 +1,215 @@
+fullnameOverride: kube-prometheus-stack
+
+kubeControllerManager:
+  enabled: false
+kubeScheduler:
+  enabled: false
+kubeProxy:
+  enabled: false
+kubeEtcd:
+  enabled: false
+
+defaultRules:
+  create: true
+  rules:
+    etcd: false
+    kubeControllerManager: false
+    kubeSchedulerAlerting: false
+    kubeSchedulerRecording: false
+    kubeProxy: false
+
+prometheus:
+  serviceMonitor:
+    selfMonitor: true
+  prometheusSpec:
+    retention: 2d
+    retentionSize: "2GB"
+    scrapeInterval: 30s
+    evaluationInterval: 30s
+    serviceMonitorSelectorNilUsesHelmValues: false
+    podMonitorSelectorNilUsesHelmValues: false
+    ruleSelectorNilUsesHelmValues: false
+    probeSelectorNilUsesHelmValues: false
+    scrapeConfigSelectorNilUsesHelmValues: false
+    resources:
+      requests:
+        cpu: 100m
+        memory: 300Mi
+      limits:
+        cpu: 750m
+        memory: 700Mi
+    storageSpec:
+      volumeClaimTemplate:
+        spec:
+          accessModes: ["ReadWriteOnce"]
+          resources:
+            requests:
+              storage: 3Gi
+    additionalServiceMonitors:
+      - name: ingress-nginx
+        selector:
+          matchLabels:
+            app.kubernetes.io/name: ingress-nginx
+        namespaceSelector:
+          matchNames: ["ingress-nginx"]
+        endpoints:
+          - port: metrics
+            interval: 30s
+      - name: cert-manager
+        selector:
+          matchLabels:
+            app.kubernetes.io/name: cert-manager
+        namespaceSelector:
+          matchNames: ["cert-manager"]
+        endpoints:
+          - port: tcp-prometheus-servicemonitor
+            interval: 60s
+    additionalPodMonitors:
+      - name: flux-system
+        selector:
+          matchLabels:
+            app.kubernetes.io/part-of: flux
+        namespaceSelector:
+          matchNames: ["flux-system"]
+        podMetricsEndpoints:
+          - port: http-prom
+            interval: 60s
+
+alertmanager:
+  alertmanagerSpec:
+    retention: 24h
+    resources:
+      requests:
+        cpu: 25m
+        memory: 64Mi
+      limits:
+        cpu: 100m
+        memory: 128Mi
+    storage:
+      volumeClaimTemplate:
+        spec:
+          accessModes: ["ReadWriteOnce"]
+          resources:
+            requests:
+              storage: 1Gi
+
+grafana:
+  deploymentStrategy:
+    type: Recreate
+  persistence:
+    enabled: true
+    type: pvc
+    accessModes: ["ReadWriteOnce"]
+    size: 2Gi
+  resources:
+    requests:
+      cpu: 50m
+      memory: 128Mi
+    limits:
+      cpu: 300m
+      memory: 256Mi
+  ingress:
+    enabled: false
+  serviceMonitor:
+    enabled: true
+  sidecar:
+    dashboards:
+      enabled: true
+      label: grafana_dashboard
+      labelValue: "1"
+      searchNamespace: ALL
+      provider:
+        foldersFromFilesStructure: true
+    datasources:
+      enabled: true
+      label: grafana_datasource
+      labelValue: "1"
+      searchNamespace: ALL
+      defaultDatasourceEnabled: false
+  grafana.ini:
+    server:
+      root_url: "$__env{GF_SERVER_ROOT_URL}"
+    auth.generic_oauth:
+      enabled: true
+      name: SSO
+      allow_sign_up: true
+      use_pkce: true
+      scopes: "openid profile email groups"
+      client_id: "$__env{GF_AUTH_GENERIC_OAUTH_CLIENT_ID}"
+      client_secret: "$__env{GF_AUTH_GENERIC_OAUTH_CLIENT_SECRET}"
+      auth_url: "$__env{GF_AUTH_GENERIC_OAUTH_AUTH_URL}"
+      token_url: "$__env{GF_AUTH_GENERIC_OAUTH_TOKEN_URL}"
+      api_url: "$__env{GF_AUTH_GENERIC_OAUTH_API_URL}"
+
+kube-state-metrics:
+  resources:
+    requests:
+      cpu: 10m
+      memory: 32Mi
+    limits:
+      cpu: 100m
+      memory: 128Mi
+
+prometheus-node-exporter:
+  resources:
+    requests:
+      cpu: 10m
+      memory: 24Mi
+    limits:
+      cpu: 50m
+      memory: 64Mi
+
+prometheusOperator:
+  resources:
+    requests:
+      cpu: 25m
+      memory: 64Mi
+    limits:
+      cpu: 200m
+      memory: 256Mi
+
+additionalPrometheusRulesMap:
+  platform-alerts:
+    groups:
+      - name: platform.app
+        rules:
+          - alert: AppDown
+            expr: max by (namespace, pod) (kube_pod_status_ready{condition="true", namespace=~"tools|monitoring"}) == 0
+            for: 5m
+            labels:
+              severity: critical
+            annotations:
+              summary: "Pod {{ $labels.namespace }}/{{ $labels.pod }} is not Ready"
+              description: "Pod has been not-Ready for more than 5 minutes."
+      - name: platform.tls
+        rules:
+          - alert: CertificateExpiringSoon
+            expr: (certmanager_certificate_expiration_timestamp_seconds - time()) < (14 * 24 * 3600)
+            for: 1h
+            labels:
+              severity: warning
+            annotations:
+              summary: "TLS certificate {{ $labels.namespace }}/{{ $labels.name }} expires in < 14 days"
+              description: "cert-manager certificate is within 14 days of expiry."
+      - name: platform.gitops
+        rules:
+          - alert: FluxReconcileFailure
+            expr: max by (namespace, name, kind) (gotk_reconcile_condition{type="Ready", status="False"}) == 1
+            for: 10m
+            labels:
+              severity: warning
+            annotations:
+              summary: "Flux {{ $labels.kind }} {{ $labels.namespace }}/{{ $labels.name }} failing to reconcile"
+              description: "A Flux resource has reported Ready=False for more than 10 minutes."
+      - name: platform.ingress
+        rules:
+          - alert: HighHttp5xxRate
+            expr: |
+              sum by (host) (rate(nginx_ingress_controller_requests{status=~"5.."}[5m]))
+                / sum by (host) (rate(nginx_ingress_controller_requests[5m])) > 0.05
+            for: 10m
+            labels:
+              severity: warning
+            annotations:
+              summary: "High 5xx rate on {{ $labels.host }}"
+              description: "More than 5% of requests are returning 5xx over the last 5 minutes."

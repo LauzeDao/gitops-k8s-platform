@@ -1,0 +1,13 @@
+installCRDs: true
+replicaCount: 1
+prometheus:
+  enabled: true
+  servicemonitor:
+    enabled: true
+resources:
+  requests:
+    cpu: 50m
+    memory: 64Mi
+global:
+  commonLabels:
+    app.kubernetes.io/part-of: gitops-k8s-platform

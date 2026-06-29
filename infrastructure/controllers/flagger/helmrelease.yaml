@@ -1,0 +1,70 @@
+---
+apiVersion: source.toolkit.fluxcd.io/v1
+kind: HelmRepository
+metadata:
+  name: flagger
+  namespace: flagger-system
+  labels:
+    app.kubernetes.io/part-of: gitops-k8s-platform
+spec:
+  interval: 1h
+  url: https://flagger.app
+---
+apiVersion: helm.toolkit.fluxcd.io/v2
+kind: HelmRelease
+metadata:
+  name: flagger
+  namespace: flagger-system
+  labels:
+    app.kubernetes.io/part-of: gitops-k8s-platform
+spec:
+  interval: 30m
+  chart:
+    spec:
+      chart: flagger
+      version: "1.43.0"
+      sourceRef:
+        kind: HelmRepository
+        name: flagger
+        namespace: flagger-system
+      interval: 12h
+  install:
+    crds: CreateReplace
+    createNamespace: false
+  upgrade:
+    crds: CreateReplace
+  valuesFrom:
+    - kind: ConfigMap
+      name: flagger-values
+      valuesKey: values.yaml
+---
+apiVersion: helm.toolkit.fluxcd.io/v2
+kind: HelmRelease
+metadata:
+  name: flagger-loadtester
+  namespace: flagger-system
+  labels:
+    app.kubernetes.io/part-of: gitops-k8s-platform
+spec:
+  interval: 30m
+  dependsOn:
+    - name: flagger
+  chart:
+    spec:
+      chart: loadtester
+      version: "0.37.0"
+      sourceRef:
+        kind: HelmRepository
+        name: flagger
+        namespace: flagger-system
+      interval: 12h
+  values:
+    podLabels:
+      app.kubernetes.io/part-of: gitops-k8s-platform
+    logLevel: info
+    resources:
+      requests:
+        cpu: 10m
+        memory: 32Mi
+      limits:
+        memory: 64Mi

@@ -1,0 +1,28 @@
+# --- Secrets / keys (NEVER commit) ---
+*.age
+age.key
+*.agekey
+# EXCEPTION: the local DEMO age key is intentionally published so the repo is
+# truly "clone & task up:local". It only decrypts fake demo secrets; real/azure
+# keys are never committed (they live in Azure Key Vault). See its banner + README.
+!bootstrap/local/age.key
+
+# --- OpenTofu / Terraform variable files (keep the committed example) ---
+*.tfvars
+!example.tfvars
+
+# --- Cluster / tooling artifacts ---
+kubeconfig
+.task/
+.tools/
+
+# --- OpenTofu / Terraform working files ---
+.terraform/
+*.tfstate
+*.tfstate.*
+crash.log
+crash.*.log
+*.backend.hcl
+
+# --- Logs ---
+*.log

@@ -1,0 +1,121 @@
+---
+apiVersion: source.toolkit.fluxcd.io/v1
+kind: HelmRepository
+metadata:
+  name: ingress-nginx
+  namespace: flux-system
+  labels:
+    app.kubernetes.io/part-of: gitops-k8s-platform
+spec:
+  interval: 1h
+  url: https://kubernetes.github.io/ingress-nginx
+---
+apiVersion: source.toolkit.fluxcd.io/v1
+kind: HelmRepository
+metadata:
+  name: jetstack
+  namespace: flux-system
+  labels:
+    app.kubernetes.io/part-of: gitops-k8s-platform
+spec:
+  interval: 1h
+  url: https://charts.jetstack.io
+---
+apiVersion: source.toolkit.fluxcd.io/v1
+kind: HelmRepository
+metadata:
+  name: external-dns
+  namespace: flux-system
+  labels:
+    app.kubernetes.io/part-of: gitops-k8s-platform
+spec:
+  interval: 1h
+  url: https://kubernetes-sigs.github.io/external-dns/
+---
+apiVersion: source.toolkit.fluxcd.io/v1
+kind: HelmRepository
+metadata:
+  name: kyverno
+  namespace: flux-system
+  labels:
+    app.kubernetes.io/part-of: gitops-k8s-platform
+spec:
+  interval: 1h
+  url: https://kyverno.github.io/kyverno/
+---
+apiVersion: source.toolkit.fluxcd.io/v1
+kind: HelmRepository
+metadata:
+  name: prometheus-community
+  namespace: flux-system
+  labels:
+    app.kubernetes.io/part-of: gitops-k8s-platform
+spec:
+  interval: 1h
+  url: https://prometheus-community.github.io/helm-charts
+---
+apiVersion: source.toolkit.fluxcd.io/v1
+kind: HelmRepository
+metadata:
+  name: grafana
+  namespace: flux-system
+  labels:
+    app.kubernetes.io/part-of: gitops-k8s-platform
+spec:
+  interval: 1h
+  url: https://grafana.github.io/helm-charts
+---
+apiVersion: source.toolkit.fluxcd.io/v1
+kind: HelmRepository
+metadata:
+  name: dex
+  namespace: flux-system
+  labels:
+    app.kubernetes.io/part-of: gitops-k8s-platform
+spec:
+  interval: 1h
+  url: https://charts.dexidp.io
+---
+apiVersion: source.toolkit.fluxcd.io/v1
+kind: HelmRepository
+metadata:
+  name: podinfo
+  namespace: flux-system
+  labels:
+    app.kubernetes.io/part-of: gitops-k8s-platform
+spec:
+  interval: 1h
+  url: https://stefanprodan.github.io/podinfo
+---
+apiVersion: source.toolkit.fluxcd.io/v1
+kind: HelmRepository
+metadata:
+  name: flagger
+  namespace: flux-system
+  labels:
+    app.kubernetes.io/part-of: gitops-k8s-platform
+spec:
+  interval: 1h
+  url: https://flagger.app
+---
+apiVersion: source.toolkit.fluxcd.io/v1
+kind: HelmRepository
+metadata:
+  name: runix
+  namespace: flux-system
+  labels:
+    app.kubernetes.io/part-of: gitops-k8s-platform
+spec:
+  interval: 1h
+  url: https://helm.runix.net
+---
+apiVersion: source.toolkit.fluxcd.io/v1
+kind: HelmRepository
+metadata:
+  name: headlamp
+  namespace: flux-system
+  labels:
+    app.kubernetes.io/part-of: gitops-k8s-platform
+spec:
+  interval: 1h
+  url: https://kubernetes-sigs.github.io/headlamp/
